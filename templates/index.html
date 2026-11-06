@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Ferretería</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; }
+        h1, h2 { color: #333; }
+        .form-container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; display: inline-block; margin-right: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #343a40; color: white; }
+        .agotado { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        .badge-alert { background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+
+    <h1>Sistema de Inventarios - Ferretería</h1>
+
+    <!-- Formulario de Ingreso de Datos -->
+    <div class="form-container">
+        <h2>Ingresar Nuevo Producto</h2>
+        <form id="inventarioForm">
+            <div class="form-group">
+                <label for="id">ID Producto:</label>
+                <input type="text" id="id" required>
+            </div>
+            <div class="form-group">
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" id="cantidad" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="precio">Precio ($):</label>
+                <input type="number" step="0.01" id="precio" required>
+            </div>
+            <div class="form-group">
+                <label for="fecha_compra">Fecha de Compra:</label>
+                <input type="date" id="fecha_compra" required>
+            </div>
+            <div class="form-group">
+                <label for="fecha_venta">Fecha de Venta:</label>
+                <input type="date" id="fecha_venta">
+            </div>
+            <br>
+            <button type="submit">Guardar Producto</button>
+        </form>
+    </div>
+
+    <!-- Visualización de Datos en Filas -->
+    <h2>Productos en Almacén</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Cantidad</th>
+                <th>Precio Unit.</th>
+                <th>IVA (19%)</th>
+                <th>Total</th>
+                <th>Fecha Compra</th>
+                <th>Fecha Venta</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="tablaProductos">
+            <!-- Filas generadas dinámicamente -->
+        </tbody>
+    </table>
+
+    <script>
+        async function cargarProductos() {
+            const respuesta = await fetch('/api/productos');
+            const productos = await respuesta.json();
+            const tabla = document.getElementById('tablaProductos');
+            tabla.innerHTML = '';
+
+            productos.forEach(prod => {
+                const fila = document.createElement('tr');
+                if (prod.agotado) {
+                    fila.classList.add('agotado');
+                }
+
+                fila.innerHTML = `
+                    <td>${prod.id}</td>
+                    <td>${prod.nombre}</td>
+                    <td>${prod.cantidad}</td>
+                    <td>$${prod.precio.toFixed(2)}</td>
+                    <td>$${prod.iva.toFixed(2)}</td>
+                    <td>$${prod.total.toFixed(2)}</td>
+                    <td>${prod.fecha_compra}</td>
+                    <td>${prod.fecha_venta}</td>
+                    <td>${prod.agotado ? '<span class="badge-alert">¡AGOTADO!</span>' : 'Disponible'}</td>
+                `;
+                tabla.appendChild(fila);
+            });
+        }
+
+        document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nuevoProducto = {
+                id: document.getElementById('id').value,
+                nombre: document.getElementById('nombre').value,
+                cantidad: document.getElementById('cantidad').value,
+                precio: document.getElementById('precio').value,
+                fecha_compra: document.getElementById('fecha_compra').value,
+                fecha_venta: document.getElementById('fecha_venta').value
+            };
+
+            await fetch('/api/productos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nuevoProducto)
+            });
+
+            document.getElementById('inventarioForm').reset();
+            cargarProductos();
+        });
+
+        cargarProductos();
+    </script>
+</body>
+</html>
